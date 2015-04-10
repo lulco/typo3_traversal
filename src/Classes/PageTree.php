@@ -1,48 +1,21 @@
 <?php
 
-class tx_Traversal_PageTree
+class Tx_Traversal_PageTree
 {
 	/**
 	 * @var array
 	 */
-	protected $treeStruct = array();
+	private static $treeStruct = array();
 	
 	/**
-	 * hook after all database operations
-	 * 
-	 * @param	string	$status		(new|update)
-	 * @param	string	$table
-	 * @param	int		$id
-	 * @param	array	&$fieldArray
-	 * @param	object	&$object
-	 * @return	void
+	 * recalculate lft, rgt and depth for all pages in page tree
 	 */
-	public function processDatamap_afterDatabaseOperations($status, $table, $id, &$fieldArray, t3lib_TCEmain &$object)
+	public static function recalculate()
 	{
-		if ($table === "pages") {
-			$this->prepareTreeStruct();
-			$this->computeStructureRecursive();
-		}
+		self::prepareTreeStruct();
+		self::computeStructureRecursive();
 	}
-	
-	/**
-	 * hook after BE db command 
-	 * 
-	 * @param string $command
-	 * @param string $table
-	 * @param string $id
-	 * @param string $value
-	 * @param t3lib_TCEmain $tcemain
-	 * @return void
-	 */
-	public function processCmdmap_postProcess($command, $table, $id, $value, t3lib_TCEmain $tcemain)
-	{
-		if ($table == 'pages' && in_array($command, array('move', 'copy', 'delete', 'undelete'))) {
-			$this->prepareTreeStruct();
-			$this->computeStructureRecursive();
-		}
-	}
-	
+
 	/**
 	 * Prepares the array(pid => array(uid)) - parent => children structure
 	 * 
@@ -62,7 +35,7 @@ class tx_Traversal_PageTree
 			}
 		}
 		$GLOBALS['TYPO3_DB']->sql_free_result($res);
-		$this->treeStruct = $struct;
+		self::$treeStruct = $struct;
 	}
 
 	/**
@@ -77,10 +50,10 @@ class tx_Traversal_PageTree
 	private function computeStructureRecursive($uid = 0, $value = 0, $depth = 0)
 	{
 		$lft = $value + 1;
-		if (isset($this->treeStruct[$uid])) {
-			ksort($this->treeStruct[$uid]);
-			foreach ($this->treeStruct[$uid] as $subUid) {
-				$value = $this->computeStructureRecursive($subUid, $value + 1, $depth + 1);
+		if (isset(self::$treeStruct[$uid])) {
+			ksort(self::$treeStruct[$uid]);
+			foreach (self::$treeStruct[$uid] as $subUid) {
+				$value = self::computeStructureRecursive($subUid, $value + 1, $depth + 1);
 			}
 		}
 
